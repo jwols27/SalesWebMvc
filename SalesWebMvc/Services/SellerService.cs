@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SalesWebMvc.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace SalesWebMvc.Services {
     public class SellerService {
@@ -22,7 +23,7 @@ namespace SalesWebMvc.Services {
         }
 
         public Seller FindById(int id) {
-            return _context.Seller.FirstOrDefault(sel => sel.Id == id);
+            return _context.Seller.Include(obj => obj.Department).FirstOrDefault(sel => sel.Id == id);
         }
 
         public void RemoveById(int id) {
