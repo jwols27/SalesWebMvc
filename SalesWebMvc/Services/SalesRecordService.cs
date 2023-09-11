@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SalesWebMvc.Data;
 using SalesWebMvc.Models;
+using SalesWebMvc.Services.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,41 @@ namespace SalesWebMvc.Services {
 
         public SalesRecordService(SalesWebMvcContext context) {
             _context = context;
+        }
+
+        public async Task InsertAsync(SalesRecord obj) {
+            _context.Add(obj);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<SalesRecord> FindByIdAsync(int id) {
+            return await _context.SalesRecord.Include(obj => obj.Seller)
+                .FirstOrDefaultAsync(sel => sel.Id == id);
+        }
+
+        public async Task RemoveByIdAsync(int id) {
+            try {
+                var obj = await _context.SalesRecord.FindAsync(id);
+                _context.SalesRecord.Remove(obj);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException e) {
+                throw new IntegrityException(e.Message);
+            }
+        }
+
+        public async Task UpdateAsync(SalesRecord obj) {
+            bool hasAny = await _context.SalesRecord.AnyAsync(x => x.Id == obj.Id);
+            if (!hasAny) {
+                throw new NotFoundException("Sales record ID not found");
+            }
+            try {
+                _context.Update(obj);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e) {
+                throw new DbConcurrencyException(e.Message);
+            }
         }
 
         public async Task<List<SalesRecord>> FindByDateAsync(DateTime? min, DateTime? max) {
